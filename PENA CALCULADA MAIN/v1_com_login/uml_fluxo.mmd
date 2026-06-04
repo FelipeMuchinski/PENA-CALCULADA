@@ -1,0 +1,22 @@
+flowchart TD
+    A([Usuário]) --> B[/login]
+    B --> C{Autenticado?}
+    C -- Não --> D[/register]
+    D --> B
+    C -- Sim --> E[/ index]
+
+    E --> F[/step1 POST - réu + pena mínmax]
+    F --> G[step2.html - circunstâncias judiciais - agravantes e atenuantes - causas de aumento e diminuição]
+
+    G <-->|live preview| H[/calculate POST - JSON API]
+
+    G --> I[/step2 POST - Ver Resultado Final]
+    I --> J[(calculos DB)]
+    I --> K[step3.html - resultado trifásico]
+
+    K --> L[/historico - histórico de cálculos]
+    K --> M[/reset - novo cálculo]
+    M --> E
+
+    style H fill:#eef2ff,stroke:#6366f1
+    style J fill:#ecfdf5,stroke:#10b981

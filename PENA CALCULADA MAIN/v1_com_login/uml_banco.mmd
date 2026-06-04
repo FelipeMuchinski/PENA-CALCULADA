@@ -1,0 +1,43 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': 'transparent', 'primaryColor': 'rgba(0,0,0,0.06)', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#333333', 'lineColor': '#333333', 'secondaryColor': 'rgba(0,0,0,0.04)', 'tertiaryColor': 'rgba(0,0,0,0.04)', 'clusterBkg': 'rgba(0,0,0,0.03)', 'clusterBorder': '#333333', 'edgeLabelBackground': 'transparent', 'titleColor': '#1a1a1a', 'fontFamily': 'Inter, sans-serif', 'attributeBackgroundColorEven': 'rgba(0,0,0,0.03)', 'attributeBackgroundColorOdd': 'rgba(0,0,0,0.06)'}}}%%
+erDiagram
+    users {
+        INTEGER id PK
+        TEXT name
+        TEXT email UK
+        TEXT password_hash
+    }
+    calculos {
+        INTEGER id PK
+        TEXT user_email FK
+        TEXT reu_name
+        TEXT process_number
+        INTEGER fase1_dias
+        INTEGER fase2_dias
+        INTEGER fase3_anos
+        INTEGER fase3_meses
+        INTEGER fase3_dias_res
+        INTEGER fase3_total
+        TEXT regime
+        TEXT salvo_em
+    }
+    leis {
+        INTEGER id PK
+        TEXT tipo
+        TEXT numero UK
+        TEXT nome
+        TEXT ementa
+        TEXT urn
+        TEXT legin_link
+        TEXT compiled_html
+        TEXT fetched_at
+    }
+    artigos {
+        INTEGER id PK
+        INTEGER lei_id FK
+        INTEGER artigo_numero
+        TEXT texto
+        TEXT fetched_at
+    }
+
+    users ||--o{ calculos : "salva"
+    leis ||--o{ artigos : "contém"

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="step-hdr">
+  <h2>Histórico de Cálculos</h2>
+  <p>Todos os cálculos realizados pela sua conta, do mais recente ao mais antigo.</p>
+</div>
+
+{% if calculos %}
+<div style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead>
+      <tr style="border-bottom:2px solid var(--border);text-align:left">
+        <th style="padding:10px 12px;color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.4px">DATA</th>
+        <th style="padding:10px 12px;color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.4px">RÉU</th>
+        <th style="padding:10px 12px;color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.4px">PROCESSO</th>
+        <th style="padding:10px 12px;color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.4px;text-align:center">FASE 1</th>
+        <th style="padding:10px 12px;color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.4px;text-align:center">FASE 2</th>
+        <th style="padding:10px 12px;color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.4px;text-align:center">PENA DEFINITIVA</th>
+        <th style="padding:10px 12px;color:var(--text-muted);font-weight:600;font-size:11px;letter-spacing:.4px">REGIME</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in calculos %}
+      <tr style="border-bottom:1px solid var(--border-light);transition:background .1s"
+          onmouseover="this.style.background='var(--surface-2)'"
+          onmouseout="this.style.background=''">
+        <td style="padding:12px 12px;color:var(--text-faint);white-space:nowrap">
+          {{ c["salvo_em"][:16].replace("T"," ") if c["salvo_em"] else "—" }}
+        </td>
+        <td style="padding:12px 12px;font-weight:500;color:var(--text)">
+          {{ c["reu_name"] or "—" }}
+        </td>
+        <td style="padding:12px 12px;color:var(--text-secondary)">
+          {{ c["process_number"] or "—" }}
+        </td>
+        <td style="padding:12px 12px;text-align:center;color:var(--phase1);font-weight:600">
+          {{ c["fase1_dias"] }} dias
+        </td>
+        <td style="padding:12px 12px;text-align:center;color:var(--phase2);font-weight:600">
+          {{ c["fase2_dias"] }} dias
+        </td>
+        <td style="padding:12px 12px;text-align:center">
+          <span style="background:var(--phase3-bg);color:var(--phase3);font-weight:700;padding:4px 10px;border-radius:8px;font-size:12px">
+            {{ c["fase3_anos"] }}a {{ c["fase3_meses"] }}m {{ c["fase3_dias_res"] }}d
+          </span>
+          <div style="font-size:10px;color:var(--text-faint);margin-top:2px">{{ c["fase3_total"] }} dias</div>
+        </td>
+        <td style="padding:12px 12px">
+          <span style="background:var(--success-bg);color:var(--success-text);font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px">
+            {{ c["regime"] or "—" }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="warn-note" style="text-align:center;padding:32px">
+  Nenhum cálculo salvo ainda.<br>
+  <span style="color:var(--text-faint);font-size:11px">Os cálculos são salvos automaticamente ao chegar na etapa de resultado.</span>
+</div>
+{% endif %}
+
+<div class="btn-row" style="justify-content:flex-start;margin-top:16px">
+  <a href="{{ url_for('inicio') }}" class="btn btn-primary">+ Novo Cálculo</a>
+</div>
+
+{% endblock %}

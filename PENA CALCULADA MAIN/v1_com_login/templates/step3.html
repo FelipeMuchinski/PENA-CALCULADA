@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="step-hdr">
+  <span class="step-badge">3</span>
+  <h2>Resultado Final</h2>
+  <p>Cálculo trifásico concluído. Confira a pena definitiva abaixo.</p>
+</div>
+
+<!-- Resumo do processo -->
+<div class="result-summary">
+  <div class="rs-item">
+    <span class="rs-label">Réu</span>
+    <span class="rs-val">{{ reu_name or '—' }}</span>
+  </div>
+  <div class="result-divider"></div>
+  <div class="rs-item">
+    <span class="rs-label">Processo</span>
+    <span class="rs-val">{{ process_number or '—' }}</span>
+  </div>
+  <div class="result-divider"></div>
+  <div class="rs-item">
+    <span class="rs-label">Data</span>
+    <span class="rs-val">{{ today }}</span>
+  </div>
+</div>
+
+<!-- Detalhamento por fase -->
+<div class="phases-detail">
+  <div class="ph-header">DETALHAMENTO POR FASE</div>
+
+  {% set phases = [
+    ("Fase 1", "Pena-Base (Art. 59)",   "Após circunstâncias judiciais",            "phase1", "var(--phase1)", "var(--phase1-bg)"),
+    ("Fase 2", "Pena Intermediária",    "Após agravantes e atenuantes (±1/6 cada)", "phase2", "var(--phase2)", "var(--phase2-bg)"),
+    ("Fase 3", "Pena Definitiva",       "Após causas de aumento e diminuição",      "phase3", "var(--phase3)", "var(--phase3-bg)"),
+  ] %}
+  {% for badge, label, desc, key, color, bg in phases %}
+  <div class="ph-row">
+    <div style="display:flex;align-items:center">
+      <div class="ph-icon" style="background:{{ bg }};color:{{ color }}">{{ loop.index }}</div>
+      <div>
+        <div>
+          <span class="ph-label">{{ label }}</span>
+          <span class="ph-badge" style="background:{{ bg }};color:{{ color }}">{{ badge }}</span>
+        </div>
+        <div class="ph-desc">{{ desc }}</div>
+      </div>
+    </div>
+    <div>
+      {% if result.is_valid %}
+      <div class="ph-val" style="color:{{ color }}">{{ result[key ~ '_fmt'] }}</div>
+      <div class="ph-days">{{ result[key].days }} dias</div>
+      {% else %}
+      <div class="ph-val" style="color:var(--text-faint)">—</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Resultado final grande -->
+{% if result.is_valid %}
+<div class="final-box">
+  <div class="f-label">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2.5">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    PENA DEFINITIVA TOTAL
+  </div>
+  <div class="final-nums">
+    <div class="final-num">
+      <span class="fn">{{ '%02d'|format(result.phase3.years) }}</span>
+      <span class="fl">Anos</span>
+    </div>
+    <div class="final-num">
+      <span class="fn">{{ '%02d'|format(result.phase3.months) }}</span>
+      <span class="fl">Meses</span>
+    </div>
+    <div class="final-num">
+      <span class="fn">{{ '%02d'|format(result.phase3.remaining_days) }}</span>
+      <span class="fl">Dias</span>
+    </div>
+  </div>
+  <div class="final-total">Total: {{ result.phase3.days }} dias de reclusão</div>
+</div>
+
+<!-- Regime sugerido -->
+<div class="regime-box">
+  <span style="font-size:16px;margin-top:1px">✅</span>
+  <div>
+    <div class="rg-title">Regime Inicial Sugerido</div>
+    <div class="rg-val">{{ result.regime }}</div>
+    <div class="rg-note">* Sugestão automática. Verifique os requisitos subjetivos e objetivos.</div>
+  </div>
+</div>
+{% else %}
+<div class="warn-note" style="margin-bottom:16px">
+  ⚠️ Preencha os dados da Etapa 1 corretamente para calcular a pena.
+</div>
+{% endif %}
+
+<!-- Botões de ação -->
+<div class="btn-row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+  <a href="{{ url_for('reiniciar') }}" class="btn btn-ghost">↺ Novo Cálculo</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{{ url_for('voltar_etapa2') }}" class="btn btn-ghost">← Voltar</a>
+    <button type="button" class="btn btn-ghost" onclick="window.print()">🖨️ Imprimir</button>
+  </div>
+</div>
+
+<style>
+@media print {
+  header, nav.sidebar, aside.panel, .btn-row { display: none !important; }
+  body { height: auto; overflow: visible; }
+  .layout { display: block; }
+  main { overflow: visible; }
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if result.is_valid %}
+updatePanel({{ result|tojson }});
+{% endif %}
+</script>
+{% endblock %}

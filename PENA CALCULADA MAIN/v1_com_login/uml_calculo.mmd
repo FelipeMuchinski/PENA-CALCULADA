@@ -1,0 +1,51 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': 'transparent', 'primaryColor': 'rgba(0,0,0,0.06)', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#333333', 'lineColor': '#333333', 'secondaryColor': 'rgba(0,0,0,0.04)', 'tertiaryColor': 'rgba(0,0,0,0.04)', 'clusterBkg': 'rgba(0,0,0,0.03)', 'clusterBorder': '#333333', 'edgeLabelBackground': 'transparent', 'titleColor': '#1a1a1a', 'fontFamily': 'Inter, sans-serif'}}}%%
+flowchart TD
+    IN["CalculationState\nmin_years · min_months · max_years · max_months\njudicial_circumstances[8 bool]  Art.59\naggravating[9 bool]  Arts.61\nmitigating[9 bool]  Arts.65-66\nincrease_factors[6 str]  ex: 1/3 1/2 2/3 fixed_2/3 double\ndecrease_factors[6 str]  ex: 1/3 1/2 2/3"]
+
+    IN --> CONV["Conversão para dias\nmin_days = min_years x 365 + min_months x 30\nmax_days = max_years x 365 + max_months x 30"]
+
+    CONV --> VAL{"min_days > 0\nmax_days > 0\nmin_days <= max_days ?"}
+    VAL -->|"Não"| INV["FullCalculationResult\nis_valid = False\nphase1 = phase2 = phase3 = 0 dias"]
+
+    VAL -->|"Sim"| F1A
+
+    subgraph FASE1["Fase 1 — Pena-Base  Art. 59 CP"]
+        F1A["negativas = soma das circunstâncias\njudiciais marcadas como True\nmáximo possível: 8"]
+        F1B["phase1_days = min_days + negativas/8 x max_days - min_days\nInterpolação linear: 0 negativas = mínimo, 8 negativas = máximo"]
+        F1A --> F1B
+    end
+
+    F1B --> F2A
+
+    subgraph FASE2["Fase 2 — Agravantes e Atenuantes  Arts. 61, 65, 66 CP"]
+        F2A["agg = count True em aggravating"]
+        F2B["mit = count True em mitigating"]
+        F2C["net = agg - mit\nnúmero líquido de modificadores"]
+        F2D["phase2_days = phase1_days + net x 1/6 x phase1_days\ncada agravante/atenuante vale 1/6 da pena-base"]
+        F2E["Clamp mínimo: phase2_days >= min_days\nClamp máximo: phase2_days <= max_days x 1.5"]
+        F2A & F2B --> F2C --> F2D --> F2E
+    end
+
+    F2E --> F3A
+
+    subgraph FASE3["Fase 3 — Causas de Aumento e Diminuição"]
+        F3A["Para cada increase_factor em order:\n  fixed_2/3  → phase3 x 5/3  Arma permitida Art.157 §2-A I\n  double     → phase3 x 2    Arma restrita Art.157 §2-A II\n  fracao     → phase3 x 1 + fracao"]
+        F3B["Para cada decrease_factor em order:\n  fracao → phase3 x 1 - fracao\n  ex: tentativa 1/3 a 2/3 Art.14\n  trafico privilegiado 1/6 a 2/3 Art.33§4"]
+        F3C["Clamp: phase3_days >= 0"]
+        F3A --> F3B --> F3C
+    end
+
+    F3C --> O1
+
+    subgraph RESULTADO["Resultado Final — FullCalculationResult"]
+        O1["days_to_result para cada fase:\n  anos = dias div 365\n  meses = resto div 30\n  dias_res = resto mod 30"]
+        O2["FullCalculationResult\nphase1: PhaseResult\nphase2: PhaseResult\nphase3: PhaseResult\nis_valid: True"]
+        O3{"phase3.years"}
+        O4["Regime Fechado\npena superior a 8 anos\nArt.33 §2 a CP"]
+        O5["Regime Semiaberto\npena de 4 a 8 anos\nArt.33 §2 b CP"]
+        O6["Regime Aberto\npena ate 4 anos\nArt.33 §2 c CP"]
+        O1 --> O2 --> O3
+        O3 -->|">= 8 anos"| O4
+        O3 -->|"4 a 7 anos"| O5
+        O3 -->|"< 4 anos"| O6
+    end

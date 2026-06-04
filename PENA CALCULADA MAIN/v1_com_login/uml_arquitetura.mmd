@@ -1,0 +1,31 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': 'transparent', 'primaryColor': 'rgba(0,0,0,0.06)', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#333333', 'lineColor': '#333333', 'secondaryColor': 'rgba(0,0,0,0.04)', 'tertiaryColor': 'rgba(0,0,0,0.04)', 'clusterBkg': 'rgba(0,0,0,0.03)', 'clusterBorder': '#333333', 'edgeLabelBackground': 'transparent', 'titleColor': '#1a1a1a', 'fontFamily': 'Inter, sans-serif'}}}%%
+flowchart TD
+
+    subgraph L1["CAMADA DE APRESENTAÇÃO  —  View"]
+        V1["🌐 Navegador\nlogin · register · index\nstep2 · step3 · historico"]
+    end
+
+    subgraph L2["CAMADA DE CONTROLE  —  Controller"]
+        C1["⚙️ Flask — app.py\nRotas HTTP · Sessão · Autenticação\nGET POST /login /register /step1 /step2 /calculate /historico"]
+    end
+
+    subgraph L3["CAMADA DE NEGÓCIO  —  Business Logic"]
+        B1["🧮 calculation.py\nDosimetria Trifásica\nFase 1 Art.59  ·  Fase 2 Arts.61,65  ·  Fase 3 aumento/diminuição\nregime fechado · semiaberto · aberto"]
+    end
+
+    subgraph L4["CAMADA DE DADOS  —  Model"]
+        D1[("🗄️ SQLite — users.db\nusers  ·  calculos  ·  leis  ·  artigos")]
+    end
+
+    subgraph L5["SERVIÇO EXTERNO  —  Data Fetcher"]
+        E1["📥 leis_fetcher.py"]
+        E2["🌍 Senado Federal API"]
+        E3["🌍 LexML"]
+        E4["🌍 Câmara LEGIN"]
+        E1 --> E2 & E3 & E4
+    end
+
+    L1 <-->|"HTTP Request · Response"| L2
+    L2 -->|"executa cálculo"| L3
+    L2 <-->|"lê e escreve"| L4
+    L5 -->|"popula leis e artigos"| L4

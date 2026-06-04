@@ -1,0 +1,48 @@
+classDiagram
+    class app {
+        +conectar_db()
+        +inicializar_db()
+        +usuario_logado()
+        +obter_estado_sessao()
+        +fase_para_dict(fase)
+        +resultado_para_dict(resultado)
+        -- Rotas --
+        +entrar() GET POST /login
+        +registrar() GET POST /register
+        +sair() GET /logout
+        +inicio() GET /
+        +etapa1() POST /step1
+        +etapa2() POST /step2
+        +calcular_api() POST /calculate
+        +voltar_etapa2() GET /step2-back
+        +reiniciar() GET /reset
+        +historico() GET /historico
+    }
+
+    class calculation {
+        +CalculationState
+        +PhaseResult
+        +FullCalculationResult
+        +days_to_result(days)
+        +apply_increase(days, factor)
+        +apply_decrease(days, factor)
+        +calculate(state)
+        +format_duration(result)
+        +suggest_regime(phase3)
+    }
+
+    class leis_fetcher {
+        +requisicao_get(url)
+        +buscar_lei_na_api(tipo, numero)
+        +buscar_link_camara(urn)
+        +buscar_texto_compilado(link)
+        +remover_html(html)
+        +extrair_artigo(texto, numero)
+        +listar_numeros_artigos(texto)
+        +buscar_ou_salvar_lei(conn, tipo, numero)
+        +salvar_todos_artigos(conn, lei)
+        +buscar_todas_leis(conn)
+    }
+
+    app --> calculation : importa calculate, format_duration, suggest_regime
+    leis_fetcher --> app : importa DB_PATH, inicializar_db

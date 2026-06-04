@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="step-hdr">
+  <span class="step-badge">1</span>
+  <h2>Configuração Inicial</h2>
+  <p>Informe os dados do réu e os limites da pena em abstrato previstos no tipo penal.</p>
+</div>
+
+<form action="/step1" method="POST">
+
+  <!-- Dados do processo -->
+  <div class="card">
+    <div class="card-title">DADOS DO PROCESSO</div>
+
+    <div class="field">
+      <label for="reu_name">Nome do Réu</label>
+      <input type="text" id="reu_name" name="reu_name"
+        value="{{ reu_name }}" placeholder="Ex: João da Silva" />
+    </div>
+
+    <div class="field">
+      <label for="process_number">Número do Processo</label>
+      <input type="text" id="process_number" name="process_number"
+        value="{{ process_number }}" placeholder="Ex: 0001234-56.2024.8.26.0100" />
+    </div>
+  </div>
+
+  <!-- Pena em abstrato -->
+  <div class="card">
+    <div class="card-title">PENA EM ABSTRATO (tipo penal)</div>
+
+    <div class="input-row" style="margin-bottom:16px">
+      <div>
+        <div class="field">
+          <label>Mínimo — Anos</label>
+          <div class="num-stepper">
+            <button type="button" onclick="step('min_years',-1)">−</button>
+            <span class="nval" id="disp_min_years">{{ state.get('min_years', 0) if state else 0 }}</span>
+            <input type="hidden" name="min_years" id="min_years"
+              value="{{ state.get('min_years', 0) if state else 0 }}">
+            <button type="button" onclick="step('min_years',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>Mínimo — Meses</label>
+          <div class="num-stepper">
+            <button type="button" onclick="step('min_months',-1,0,11)">−</button>
+            <span class="nval" id="disp_min_months">{{ state.get('min_months', 0) if state else 0 }}</span>
+            <input type="hidden" name="min_months" id="min_months"
+              value="{{ state.get('min_months', 0) if state else 0 }}">
+            <button type="button" onclick="step('min_months',1,0,11)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <div>
+        <div class="field">
+          <label>Máximo — Anos</label>
+          <div class="num-stepper">
+            <button type="button" onclick="step('max_years',-1)">−</button>
+            <span class="nval" id="disp_max_years">{{ state.get('max_years', 0) if state else 0 }}</span>
+            <input type="hidden" name="max_years" id="max_years"
+              value="{{ state.get('max_years', 0) if state else 0 }}">
+            <button type="button" onclick="step('max_years',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label>Máximo — Meses</label>
+          <div class="num-stepper">
+            <button type="button" onclick="step('max_months',-1,0,11)">−</button>
+            <span class="nval" id="disp_max_months">{{ state.get('max_months', 0) if state else 0 }}</span>
+            <input type="hidden" name="max_months" id="max_months"
+              value="{{ state.get('max_months', 0) if state else 0 }}">
+            <button type="button" onclick="step('max_months',1,0,11)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint" style="margin-top:10px">
+      💡 Ex: Homicídio doloso (Art. 121) — mínimo 6 anos, máximo 20 anos.
+    </p>
+
+    <div id="pena-error" style="display:none; margin-top:12px; padding:10px 14px;
+      background:#fff0f0; border:1px solid #e53935; border-radius:6px;
+      color:#c62828; font-size:0.875rem; font-weight:500;">
+      ⚠️ A pena mínima não pode ser maior que a pena máxima.
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" id="btn-proxima" class="btn btn-primary">
+      Próxima Etapa →
+    </button>
+  </div>
+
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Stepper numérico
+function step(id, delta, min=0, max=99) {
+  const inp  = document.getElementById(id);
+  const disp = document.getElementById('disp_' + id);
+  let val = (parseInt(inp.value) || 0) + delta;
+  val = Math.max(min, Math.min(max, val));
+  inp.value  = val;
+  disp.textContent = val;
+  checkPenaValidity();
+  liveCalc();
+}
+
+function checkPenaValidity() {
+  const minDays = (parseInt(document.getElementById('min_years').value) || 0) * 365
+                + (parseInt(document.getElementById('min_months').value) || 0) * 30;
+  const maxDays = (parseInt(document.getElementById('max_years').value) || 0) * 365
+                + (parseInt(document.getElementById('max_months').value) || 0) * 30;
+  const invalid = minDays > 0 && minDays > maxDays;
+  document.getElementById('pena-error').style.display  = invalid ? 'block' : 'none';
+  document.getElementById('btn-proxima').disabled       = invalid;
+  document.getElementById('btn-proxima').style.opacity  = invalid ? '0.45' : '';
+  document.getElementById('btn-proxima').style.cursor   = invalid ? 'not-allowed' : '';
+}
+
+// Envia os valores atuais para o endpoint /calculate e atualiza o painel
+function liveCalc() {
+  const payload = {
+    min_years:  parseInt(document.getElementById('min_years').value)  || 0,
+    min_months: parseInt(document.getElementById('min_months').value) || 0,
+    max_years:  parseInt(document.getElementById('max_years').value)  || 0,
+    max_months: parseInt(document.getElementById('max_months').value) || 0,
+    judicial_circumstances: Array(8).fill(false),
+    aggravating:  Array(9).fill(false),
+    mitigating:   Array(8).fill(false),
+    increase_factors: Array(4).fill('none'),
+    decrease_factors: Array(4).fill('none'),
+  };
+  fetch('/calculate', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(data => updatePanel(data));
+}
+</script>
+{% endblock %}

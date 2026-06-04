@@ -1,0 +1,48 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': 'transparent', 'primaryColor': 'rgba(0,0,0,0.06)', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#333333', 'lineColor': '#333333', 'secondaryColor': 'rgba(0,0,0,0.04)', 'tertiaryColor': 'rgba(0,0,0,0.04)', 'clusterBkg': 'rgba(0,0,0,0.03)', 'clusterBorder': '#333333', 'edgeLabelBackground': 'transparent', 'titleColor': '#1a1a1a', 'fontFamily': 'Inter, sans-serif'}}}%%
+flowchart TD
+    START["python3 app.py\nInício da aplicação"] --> INIT
+
+    subgraph INIT["inicializar_db()  — executada uma vez na inicialização"]
+        DB1["CREATE TABLE IF NOT EXISTS users\nid · name · email · password_hash"]
+        DB2["CREATE TABLE IF NOT EXISTS leis\nid · tipo · numero · nome · urn · compiled_html"]
+        DB3["CREATE TABLE IF NOT EXISTS artigos\nid · lei_id · artigo_numero · texto"]
+        DB4["CREATE TABLE IF NOT EXISTS calculos\nid · user_email · reu_name · process_number\nfase1_dias · fase2_dias · fase3_anos/meses/dias\nregime · salvo_em"]
+    end
+
+    INIT --> AUTH
+
+    subgraph AUTH["Autenticação"]
+        L["GET /login\nlogin.html"]
+        L -->|"POST email + senha"| VU{"usuário\nexiste no DB?"}
+        VU -->|"Não"| EL["flash: e-mail ou\nsenha incorretos"] --> L
+        VU -->|"Sim\ncheck_password_hash"| SS["session[user_email]\nsession[user_name]"]
+        R["GET /register\nregister.html"]
+        R -->|"POST nome + email + senha"| VR{"email já\ncadastrado?"}
+        VR -->|"Sim"| ER["flash: e-mail\njá cadastrado"] --> R
+        VR -->|"Não"| IU["INSERT INTO users\npbkdf2:sha256"] --> L
+    end
+
+    SS --> IDX
+
+    subgraph WIZARD["Calculadora — Método Trifásico"]
+        IDX["GET /\nindex.html\nsetdefault: state, reu_name,\nprocess_number, increase_factors,\ndecrease_factors, mitigating, aggravating"]
+
+        IDX -->|"POST reu_name · process_number\nmin_years · min_months\nmax_years · max_months"| S1["POST /step1\nsalva tudo na session"]
+
+        S1 --> S2["step2.html\n8 circunstâncias judiciais Art.59\n9 agravantes Arts.61\n9 atenuantes Arts.65-66\n6 causas de aumento\n5 causas de diminuição"]
+
+        S2 <-->|"POST JSON a cada checkbox/botão\nretorna phase1_fmt, phase2_fmt,\nphase3_fmt, regime em JSON"| API["POST /calculate\nrecebe CalculationState via JSON\nexecuta calculate()\nretorna FullCalculationResult"]
+
+        S2 -->|"POST judicial_0..7\nagg_0..8 · mit_0..8\ninc_0..5 · dec_0..4"| S2P["POST /step2\nsalva judicial_circumstances[8]\naggravating[9] · mitigating[9]\nincrease_factors[6]\ndecrease_factors[5]"]
+
+        S2P --> CALC["calculate(obter_estado_sessao())\nretorna FullCalculationResult"]
+
+        CALC -->|"is_valid = True"| DB[("INSERT INTO calculos\nuser_email · reu_name · process_number\nfase1_dias · fase2_dias\nfase3_anos · fase3_meses\nfase3_dias_res · fase3_total\nregime · salvo_em")]
+
+        CALC --> S3["step3.html\nDetalhamento Fase 1, 2 e 3\nPena Definitiva em anos/meses/dias\nRegime Inicial Sugerido"]
+    end
+
+    S3 --> HIS["GET /historico\nSELECT * FROM calculos\nWHERE user_email = session\nORDER BY salvo_em DESC"]
+    S3 --> BCK["GET /step2-back\nrecalcula e volta ao step2.html"] --> S2
+    S3 --> RST["GET /reset\npop session: state\nreu_name · process_number"] --> IDX
+    L --> LOGOUT["GET /logout\nsession.clear()"] --> L

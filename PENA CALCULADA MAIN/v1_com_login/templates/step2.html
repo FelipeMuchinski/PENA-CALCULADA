@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="step-hdr">
+  <span class="step-badge">2</span>
+  <h2>Cálculo Trifásico</h2>
+  <p>Aplique as três fases do método dosimétrico conforme o Código Penal Brasileiro.</p>
+</div>
+
+<form action="/step2" method="POST" id="calcForm">
+
+  <!-- ── Fase 1 ──────────────────────────────────────────────────────────── -->
+  {% set neg_count = state.get('judicial_circumstances', [False]*9)|select|list|length %}
+  <div class="accordion {% if true %}open{% endif %}" id="acc0">
+    <div class="accordion-head" onclick="toggleAcc('acc0')">
+      <div class="acc-left">
+        <div class="acc-num" style="background:#6366f1">1</div>
+        <div class="acc-info">
+          <div class="acc-title">Fase 1 — Art. 59 (Circunstâncias Judiciais)</div>
+          <div class="acc-sub">Circunstâncias negativas elevam a pena-base</div>
+        </div>
+      </div>
+      <span class="acc-badge" style="background:#eef2ff;color:#4338ca" id="badge0">
+        {{ neg_count }}/8
+      </span>
+      <span class="acc-arrow">▾</span>
+    </div>
+    <div class="accordion-body">
+      {% for c in judicial_circumstances %}
+      {% set is_active = state.get('judicial_circumstances', [False]*8)[c.id] %}
+      <div class="circ-card {% if is_active %}active{% endif %}" id="cc_{{ c.id }}" onclick="toggleJudicial({{ c.id }})">
+        <span class="circ-icon">{{ c.icon }}</span>
+        <div class="circ-body">
+          <div>
+            <span class="circ-title">{{ c.title }}</span>
+            <span class="circ-art">{{ c.article }}</span>
+          </div>
+          <div class="circ-desc">{{ c.description }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span class="circ-status" id="cs_{{ c.id }}" style="display:{% if is_active %}inline{% else %}none{% endif %}">Negativa</span>
+          <label class="toggle-wrap">
+            <input type="checkbox" name="judicial_{{ c.id }}" id="jud_{{ c.id }}"
+              {% if is_active %}checked{% endif %}
+              onchange="judChanged()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Progress bar fase 1 -->
+      <div style="background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:12px;padding:12px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:11px;color:var(--text-muted)">Circunstâncias negativas</span>
+          <span style="font-size:11px;font-weight:600;color:var(--primary-text)" id="judLabel">
+            {{ neg_count }} de 8 ({{ (neg_count/8*100)|int }}% do intervalo)
+          </span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" id="judBar" style="width:{{ (neg_count/8*100)|int }}%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Fase 2 ──────────────────────────────────────────────────────────── -->
+  {% set agg_count = state.get('aggravating', [False]*9)|select|list|length %}
+  {% set mit_count = state.get('mitigating', [False]*9)|select|list|length %}
+  {% set net = agg_count - mit_count %}
+  <div class="accordion" id="acc1">
+    <div class="accordion-head" onclick="toggleAcc('acc1')">
+      <div class="acc-left">
+        <div class="acc-num" style="background:#f59e0b">2</div>
+        <div class="acc-info">
+          <div class="acc-title">Fase 2 — Agravantes e Atenuantes</div>
+          <div class="acc-sub">Cada circunstância agrava ou atenua 1/6 da pena-base</div>
+        </div>
+      </div>
+      <span class="acc-badge" style="background:#fffbeb;color:#92400e" id="badge1">
+        {{ agg_count + mit_count }}/{{ aggravating|length + mitigating|length }}
+      </span>
+      <span class="acc-arrow">▾</span>
+    </div>
+    <div class="accordion-body">
+
+      <!-- Agravantes -->
+      <div class="section-lbl" style="color:var(--danger)">
+        ↑ AGRAVANTES (Art. 61) — +1/6 cada
+      </div>
+      <div class="check-grid" style="margin-bottom:14px">
+        {% for a in aggravating %}
+        {% set is_checked = state.get('aggravating', [False]*9)[a.id] %}
+        <label class="check-item {% if is_checked %}active{% endif %}" id="agg_item_{{ a.id }}">
+          <input type="checkbox" name="agg_{{ a.id }}" id="agg_{{ a.id }}"
+            {% if is_checked %}checked{% endif %}
+            onchange="phase2Changed()">
+          <div class="check-box">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div>
+            <div class="check-label">{{ a.label }}</div>
+            <div class="check-art">{{ a.article }}</div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Atenuantes -->
+      <div class="section-lbl" style="color:var(--success)">
+        ↓ ATENUANTES (Art. 65) — -1/6 cada
+      </div>
+      <div class="check-grid" style="margin-bottom:14px">
+        {% for m in mitigating %}
+        {% set is_checked = state.get('mitigating', [False]*8)[m.id] %}
+        <label class="check-item success {% if is_checked %}active{% endif %}" id="mit_item_{{ m.id }}">
+          <input type="checkbox" name="mit_{{ m.id }}" id="mit_{{ m.id }}"
+            {% if is_checked %}checked{% endif %}
+            onchange="phase2Changed()">
+          <div class="check-box">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div>
+            <div class="check-label">{{ m.label }}</div>
+            <div class="check-art">{{ m.article }}</div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <!-- Net balance -->
+      <div class="net-row" id="netRow" style="display:{% if agg_count > 0 or mit_count > 0 %}flex{% else %}none{% endif %};
+        background:{% if net > 0 %}var(--danger-bg){% elif net < 0 %}var(--success-bg){% else %}var(--surface-2){% endif %};
+        border:1px solid {% if net > 0 %}var(--danger-border){% elif net < 0 %}var(--success-border){% else %}var(--border){% endif %};">
+        <span style="font-size:12px;color:var(--text-secondary)">Saldo líquido</span>
+        <span id="netLabel" style="font-size:13px;font-weight:700;
+          color:{% if net > 0 %}var(--danger){% elif net < 0 %}var(--success){% else %}var(--text-muted){% endif %}">
+          {% if net > 0 %}+{{ net }}{% else %}{{ net }}{% endif %} circunstância(s){% if net == 0 %} (neutro){% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Fase 3 ──────────────────────────────────────────────────────────── -->
+  {% set inc_count = state.get('increase_factors', ['none']*6)|reject('equalto','none')|list|length %}
+  {% set dec_count = state.get('decrease_factors', ['none']*6)|reject('equalto','none')|list|length %}
+  <div class="accordion" id="acc2">
+    <div class="accordion-head" onclick="toggleAcc('acc2')">
+      <div class="acc-left">
+        <div class="acc-num" style="background:#10b981">3</div>
+        <div class="acc-info">
+          <div class="acc-title">Fase 3 — Causas de Aumento e Diminuição</div>
+          <div class="acc-sub">Aplicadas sobre a pena intermediária por frações legais</div>
+        </div>
+      </div>
+      <span class="acc-badge" style="background:#ecfdf5;color:#065f46" id="badge2">
+        {{ inc_count + dec_count }}/{{ increase_causes|length + decrease_causes|length }}
+      </span>
+      <span class="acc-arrow">▾</span>
+    </div>
+    <div class="accordion-body">
+
+      <!-- Causas de aumento -->
+      <div class="section-lbl" style="color:var(--danger)">% CAUSAS DE AUMENTO</div>
+      {% for cause in increase_causes %}
+      {% set cur_val = (state.get('increase_factors') or ['none']*6)[cause.id] if cause.id < (state.get('increase_factors') or ['none']*6)|length else 'none' %}
+      <div class="circ-card {% if cur_val != 'none' %}active{% endif %}" id="inc_card_{{ cause.id }}"
+           style="flex-direction:column;align-items:flex-start;gap:10px">
+        <p style="font-size:12px;font-weight:500;color:var(--text-secondary)">{{ cause.label }}</p>
+        <div class="frac-row" id="inc_frac_{{ cause.id }}">
+          {% for frac in cause.fractions %}
+          <button type="button"
+            class="frac-btn {% if cur_val == frac %}selected-inc{% endif %}"
+            id="inc_btn_{{ cause.id }}_{{ loop.index0 }}"
+            onclick="selectFrac('inc', {{ cause.id }}, '{{ frac }}')">
+            {% if cause.fractions_label is defined and frac in cause.fractions_label %}
+              {{ cause.fractions_label[frac] }}
+            {% elif frac == 'none' %}Nenhuma
+            {% else %}+{{ frac }}{% endif %}
+          </button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="inc_{{ cause.id }}" id="inc_{{ cause.id }}" value="{{ cur_val }}">
+      </div>
+      {% endfor %}
+
+      <div class="divider"></div>
+
+      <!-- Causas de diminuição -->
+      <div class="section-lbl" style="color:var(--success)">% CAUSAS DE DIMINUIÇÃO</div>
+      {% for cause in decrease_causes %}
+      {% set cur_val = (state.get('decrease_factors') or ['none']*6)[cause.id] if cause.id < (state.get('decrease_factors') or ['none']*6)|length else 'none' %}
+      <div class="circ-card {% if cur_val != 'none' %}active{% endif %}" id="dec_card_{{ cause.id }}"
+           style="flex-direction:column;align-items:flex-start;gap:10px">
+        <p style="font-size:12px;font-weight:500;color:var(--text-secondary)">{{ cause.label }}</p>
+        <div class="frac-row">
+          {% for frac in cause.fractions %}
+          <button type="button"
+            class="frac-btn {% if cur_val == frac %}selected-dec{% endif %}"
+            id="dec_btn_{{ cause.id }}_{{ loop.index0 }}"
+            onclick="selectFrac('dec', {{ cause.id }}, '{{ frac }}')">
+            {{ 'Nenhuma' if frac == 'none' else '-' + frac }}
+          </button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="dec_{{ cause.id }}" id="dec_{{ cause.id }}" value="{{ cur_val }}">
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="btn-row" style="justify-content:space-between">
+    <a href="/" class="btn btn-ghost">← Voltar</a>
+    <button type="submit" class="btn btn-primary">Ver Resultado Final →</button>
+  </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── State mirrors (for live API call) ─────────────────────────────────────
+const S = {
+  min_years:  {{ state.min_years if state else 0 }},
+  min_months: {{ state.min_months if state else 0 }},
+  max_years:  {{ state.max_years if state else 0 }},
+  max_months: {{ state.max_months if state else 0 }},
+  judicial: {{ state.get('judicial_circumstances', [False]*8)|list|tojson }},
+  agg:      {{ state.get('aggravating', [False]*9)|list|tojson }},
+  mit:      {{ state.get('mitigating', [False]*8)|list|tojson }},
+  inc:      {{ state.get('increase_factors', ['none']*6)|list|tojson }},
+  dec:      {{ state.get('decrease_factors', ['none']*6)|list|tojson }},
+};
+
+function liveCalc() {
+  fetch('/calculate', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      min_years: S.min_years, min_months: S.min_months,
+      max_years: S.max_years, max_months: S.max_months,
+      judicial_circumstances: S.judicial,
+      aggravating:   S.agg,
+      mitigating:    S.mit,
+      increase_factors: S.inc,
+      decrease_factors: S.dec,
+    }),
+  }).then(r => r.json()).then(updatePanel);
+}
+
+// ── Accordion ──────────────────────────────────────────────────────────────
+function toggleAcc(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ── Fase 1: Circunstâncias Judiciais ──────────────────────────────────────
+function toggleJudicial(idx) {
+  const cb = document.getElementById('jud_' + idx);
+  cb.checked = !cb.checked;
+  S.judicial[idx] = cb.checked;
+
+  const card   = document.getElementById('cc_' + idx);
+  const status = document.getElementById('cs_' + idx);
+  if (cb.checked) {
+    card.classList.add('active');
+    status.style.display = 'inline';
+  } else {
+    card.classList.remove('active');
+    status.style.display = 'none';
+  }
+  judChanged();
+}
+
+function judChanged() {
+  // Read all toggles into S.judicial
+  for (let i = 0; i < 8; i++) {
+    const cb = document.getElementById('jud_' + i);
+    if (cb) S.judicial[i] = cb.checked;
+  }
+  const count = S.judicial.filter(Boolean).length;
+  document.getElementById('judLabel').textContent =
+    count + ' de 8 (' + Math.round(count/8*100) + '% do intervalo)';
+  document.getElementById('judBar').style.width = (count/8*100) + '%';
+  document.getElementById('badge0').textContent = count + '/8';
+  liveCalc();
+}
+
+// ── Fase 2: Agravantes e Atenuantes ───────────────────────────────────────
+function phase2Changed() {
+  for (let i = 0; i < 9; i++) {
+    const cb = document.getElementById('agg_' + i);
+    if (cb) {
+      S.agg[i] = cb.checked;
+      const item = document.getElementById('agg_item_' + i);
+      if (item) {
+        if (cb.checked) item.classList.add('active');
+        else item.classList.remove('active');
+      }
+    }
+  }
+  for (let i = 0; i < 8; i++) {
+    const cb = document.getElementById('mit_' + i);
+    if (cb) {
+      S.mit[i] = cb.checked;
+      const item = document.getElementById('mit_item_' + i);
+      if (item) {
+        if (cb.checked) item.classList.add('active');
+        else item.classList.remove('active');
+      }
+    }
+  }
+
+  const aggC = S.agg.filter(Boolean).length;
+  const mitC = S.mit.filter(Boolean).length;
+  const net  = aggC - mitC;
+
+  document.getElementById('badge1').textContent = (aggC + mitC) + '/{{ aggravating|length + mitigating|length }}';
+
+  const netRow = document.getElementById('netRow');
+  if (aggC > 0 || mitC > 0) {
+    netRow.style.display = 'flex';
+    const nl = document.getElementById('netLabel');
+    nl.textContent = (net > 0 ? '+' : '') + net + ' circunstância(s)' + (net === 0 ? ' (neutro)' : '');
+    nl.style.color = net > 0 ? 'var(--danger)' : net < 0 ? 'var(--success)' : 'var(--text-muted)';
+    netRow.style.background = net > 0 ? 'var(--danger-bg)' : net < 0 ? 'var(--success-bg)' : 'var(--surface-2)';
+    netRow.style.border = '1px solid ' + (net > 0 ? 'var(--danger-border)' : net < 0 ? 'var(--success-border)' : 'var(--border)');
+  } else {
+    netRow.style.display = 'none';
+  }
+
+  // Update modifier panel
+  document.getElementById('mJud').textContent = S.judicial.filter(Boolean).length + '/8';
+  document.getElementById('mAgg').textContent = '+' + aggC;
+  document.getElementById('mMit').textContent = '-' + mitC;
+  document.getElementById('mNet').textContent = (net > 0 ? '+' : '') + net;
+
+  liveCalc();
+}
+
+// ── Fase 3: Frações ────────────────────────────────────────────────────────
+function selectFrac(type, idx, val) {
+  const hidden = document.getElementById(type + '_' + idx);
+  hidden.value = val;
+
+  if (type === 'inc') {
+    S.inc[idx] = val;
+  } else {
+    S.dec[idx] = val;
+  }
+
+  // Update button styles
+  const card = document.getElementById(type + '_card_' + idx);
+  if (card) {
+    const btns = card.querySelectorAll('.frac-btn');
+    btns.forEach(b => {
+      b.classList.remove('selected-inc', 'selected-dec');
+      const bVal = b.textContent.trim().replace(/^[+\-]/, '');
+      const isMatch = (bVal === 'Nenhuma' && val === 'none') || bVal === val;
+      if (isMatch) b.classList.add(type === 'inc' ? 'selected-inc' : 'selected-dec');
+    });
+    if (val !== 'none') card.classList.add('active');
+    else card.classList.remove('active');
+  }
+
+  const incC = S.inc.filter(v => v !== 'none').length;
+  const decC = S.dec.filter(v => v !== 'none').length;
+  document.getElementById('badge2').textContent = (incC + decC) + '/{{ increase_causes|length + decrease_causes|length }}';
+
+  liveCalc();
+}
+
+// Run once on load to refresh panel
+liveCalc();
+</script>
+{% endblock %}

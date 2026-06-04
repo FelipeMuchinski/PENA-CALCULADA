@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Criar conta — Pena Calculada</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #6366f1; --primary-hover: #4f46e5;
+      --surface: #ffffff; --app-bg: #f1f5f9; --border: #e2e8f0;
+      --text: #0f172a; --text-secondary: #334155; --text-muted: #64748b;
+      --danger: #ef4444; --danger-bg: #fef2f2; --danger-border: #fecaca;
+      --success: #10b981; --success-bg: #ecfdf5; --success-border: #a7f3d0; --success-text: #065f46;
+      --info-bg: #eff6ff; --info-border: #bfdbfe; --info-text: #1e40af;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--app-bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.07);
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo-box {
+      width: 38px; height: 38px;
+      background: var(--primary);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-box svg { color: #fff; }
+    .logo-name { font-size: 17px; font-weight: 700; color: var(--text); }
+    .logo-sub  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+    .login-title { font-size: 21px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .login-sub   { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+    label  { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+    input  {
+      padding: 10px 13px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-family: inherit; font-size: 14px; color: var(--text);
+      background: #f8fafc; outline: none;
+      transition: border .15s, box-shadow .15s, background .15s;
+      width: 100%;
+    }
+    input:focus {
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+    }
+
+    .btn-login {
+      width: 100%; padding: 12px;
+      border-radius: 10px; border: none;
+      background: var(--primary); color: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 6px;
+      transition: background .15s, transform .1s;
+    }
+    .btn-login:hover  { background: var(--primary-hover); }
+    .btn-login:active { transform: scale(.98); }
+
+    .flash { padding: 11px 14px; border-radius: 10px; font-size: 13px;
+             font-weight: 500; border: 1px solid; margin-bottom: 18px; }
+    .flash.error   { background: var(--danger-bg);  border-color: var(--danger-border);  color: var(--danger); }
+    .flash.success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-text); }
+    .flash.info    { background: var(--info-bg);    border-color: var(--info-border);    color: var(--info-text); }
+
+    .login-footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .login-footer a {
+      color: var(--primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .login-footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="login-card">
+
+  <!-- Logo -->
+  <div class="logo-row">
+    <div class="logo-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">Pena Calculada</div>
+      <div class="logo-sub">Dosimetria Trifásica — CP Brasileiro</div>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for cat, msg in messages %}
+    <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+  <!-- Título -->
+  <h1 class="login-title">Criar conta</h1>
+  <p class="login-sub">Preencha os dados para acessar a calculadora.</p>
+
+  <!-- Formulário -->
+  <form method="POST" action="{{ url_for('registrar') }}">
+    <div class="field">
+      <label for="name">Nome</label>
+      <input type="text" id="name" name="name"
+             placeholder="Seu nome" required autofocus/>
+    </div>
+    <div class="field">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email"
+             placeholder="seu@email.com" required/>
+    </div>
+    <div class="field">
+      <label for="password">Senha <span style="color:var(--text-muted);font-weight:400">(mínimo 6 caracteres)</span></label>
+      <input type="password" id="password" name="password"
+             placeholder="••••••••" required minlength="6"/>
+    </div>
+    <button type="submit" class="btn-login">Criar conta →</button>
+  </form>
+
+  <div class="login-footer">
+    Já tem conta? <a href="{{ url_for('entrar') }}">Entrar</a>
+  </div>
+
+</div>
+</body>
+</html>
